@@ -96,7 +96,7 @@ func (b *S3Broker) Provision(
 		return brokerapi.ProvisionedServiceSpec{}, err
 	}
 
-	return brokerapi.ProvisionedServiceSpec{IsAsync: true}, nil
+	return brokerapi.ProvisionedServiceSpec{IsAsync: false}, nil
 }
 
 func (b *S3Broker) Update(
