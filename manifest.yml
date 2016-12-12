@@ -6,6 +6,6 @@ applications:
   command: s3-broker --config ./config.json --port $PORT
 env:
   GOVERSION: go1.7
-  GOPACKAGENAME: s3-broker
+  # GOPACKAGENAME: s3-broker
   AWS_ACCESS_KEY_ID: "your-aws-access-key-id"
   AWS_SECRET_ACCESS_KEY: "your-aws-secret-access-key"

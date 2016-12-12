@@ -7,7 +7,9 @@ import (
 
 type Config struct {
 	Region                       string  `json:"region"`
+	IamPath                      string  `json:"iam_path"`
 	BucketPrefix                 string  `json:"bucket_prefix"`
+	AwsPartition                 string  `json:"aws_partition"`
 	AllowUserProvisionParameters bool    `json:"allow_user_provision_parameters"`
 	AllowUserUpdateParameters    bool    `json:"allow_user_update_parameters"`
 	Catalog                      Catalog `json:"catalog"`

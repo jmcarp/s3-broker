@@ -13,7 +13,9 @@ jobs:
       AUTH_USERNAME: {{staging-auth-name}}
       AUTH_PASSWORD: {{staging-auth-pass}}
       AWS_REGION: {{staging-aws-region}}
-      BUCKET_PREFIX: cg-
+      BUCKET_PREFIX: cg
+      IAM_PATH: "/cloud-foundry/s3/"
+      AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-staging
     params:
       path: broker-src-built
@@ -77,7 +79,9 @@ jobs:
       AUTH_USERNAME: {{production-auth-name}}
       AUTH_PASSWORD: {{production-auth-pass}}
       AWS_REGION: {{production-aws-region}}
-      BUCKET_PREFIX: cg-
+      BUCKET_PREFIX: cg
+      IAM_PATH: "/cloud-foundry/s3/"
+      AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-production
     params:
       path: broker-src-built
