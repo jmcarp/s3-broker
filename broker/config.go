@@ -24,6 +24,10 @@ func (c Config) Validate() error {
 		return errors.New("Must provide a non-empty BucketPrefix")
 	}
 
+	if c.AwsPartition == "" {
+		return errors.New("Must provide a non-empty AwsPartition")
+	}
+
 	if err := c.Catalog.Validate(); err != nil {
 		return fmt.Errorf("Validating Catalog configuration: %s", err)
 	}
