@@ -98,6 +98,10 @@ func (s *S3Bucket) Modify(bucketName string, bucketDetails BucketDetails) error 
 }
 
 func (s *S3Bucket) Delete(bucketName string) error {
+	err := s.clear(bucketName)
+	if err != nil {
+		return err
+	}
 
 	deleteBucketInput := &s3.DeleteBucketInput{
 		Bucket: aws.String(bucketName),
@@ -136,4 +140,127 @@ func (s *S3Bucket) buildCreateBucketInput(bucketName string, bucketDetails Bucke
 		Bucket: aws.String(bucketName),
 	}
 	return createBucketInput
+}
+
+func (s *S3Bucket) clear(bucketName string) error {
+	err := s.clearObjects(bucketName)
+	if err != nil {
+		return err
+	}
+
+	return s.clearVersions(bucketName)
+}
+
+func (s *S3Bucket) clearObjects(bucketName string) error {
+	var (
+		marker  *string
+		objects []*s3.ObjectIdentifier
+	)
+
+	for {
+		listObjectsInput := &s3.ListObjectsInput{
+			Bucket:  aws.String(bucketName),
+			MaxKeys: aws.Int64(1000),
+			Marker:  marker,
+		}
+		s.logger.Debug("list-objects", lager.Data{"input": listObjectsInput})
+
+		listObjectsOutput, err := s.s3svc.ListObjects(listObjectsInput)
+		if err != nil {
+			s.logger.Error("aws-s3-error", err)
+			if awsErr, ok := err.(awserr.Error); ok {
+				return errors.New(awsErr.Code() + ": " + awsErr.Message())
+			}
+			return err
+		}
+
+		objects = []*s3.ObjectIdentifier{}
+		for _, object := range listObjectsOutput.Contents {
+			objects = append(objects, &s3.ObjectIdentifier{
+				Key: object.Key,
+			})
+		}
+
+		if len(objects) > 0 {
+			deleteObjectsInput := &s3.DeleteObjectsInput{
+				Bucket: aws.String(bucketName),
+				Delete: &s3.Delete{Objects: objects},
+			}
+			s.logger.Debug("delete-versions", lager.Data{"input": deleteObjectsInput})
+
+			_, err = s.s3svc.DeleteObjects(deleteObjectsInput)
+			if err != nil {
+				s.logger.Error("aws-s3-error", err)
+				if awsErr, ok := err.(awserr.Error); ok {
+					return errors.New(awsErr.Code() + ": " + awsErr.Message())
+				}
+				return err
+			}
+		}
+
+		if aws.StringValue(listObjectsOutput.Marker) == "" {
+			break
+		}
+	}
+
+	return nil
+}
+
+func (s *S3Bucket) clearVersions(bucketName string) error {
+	var (
+		keyMarker       *string
+		versionIdMarker *string
+		objects         []*s3.ObjectIdentifier
+	)
+
+	for {
+		listVersionsInput := &s3.ListObjectVersionsInput{
+			Bucket:          aws.String(bucketName),
+			KeyMarker:       keyMarker,
+			VersionIdMarker: versionIdMarker,
+		}
+		s.logger.Debug("list-versions", lager.Data{"input": listVersionsInput})
+
+		listVersionsOutput, err := s.s3svc.ListObjectVersions(listVersionsInput)
+		if err != nil {
+			s.logger.Error("aws-s3-error", err)
+			if awsErr, ok := err.(awserr.Error); ok {
+				return errors.New(awsErr.Code() + ": " + awsErr.Message())
+			}
+			return err
+		}
+
+		objects = []*s3.ObjectIdentifier{}
+		for _, version := range listVersionsOutput.Versions {
+			objects = append(objects, &s3.ObjectIdentifier{
+				Key:       version.Key,
+				VersionId: version.VersionId,
+			})
+		}
+
+		if len(objects) > 0 {
+			deleteObjectsInput := &s3.DeleteObjectsInput{
+				Bucket: aws.String(bucketName),
+				Delete: &s3.Delete{Objects: objects},
+			}
+			s.logger.Debug("delete-versions", lager.Data{"input": deleteObjectsInput})
+
+			_, err = s.s3svc.DeleteObjects(deleteObjectsInput)
+			if err != nil {
+				s.logger.Error("aws-s3-error", err)
+				if awsErr, ok := err.(awserr.Error); ok {
+					return errors.New(awsErr.Code() + ": " + awsErr.Message())
+				}
+				return err
+			}
+		}
+
+		keyMarker = listVersionsOutput.NextKeyMarker
+		versionIdMarker = listVersionsOutput.VersionIdMarker
+		if aws.StringValue(keyMarker) == "" && aws.StringValue(versionIdMarker) == "" {
+			break
+		}
+	}
+
+	return nil
 }
