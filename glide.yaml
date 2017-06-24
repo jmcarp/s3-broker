@@ -11,3 +11,4 @@ import:
   - service/s3
 - package: github.com/mitchellh/mapstructure
 - package: github.com/pivotal-cf/brokerapi
+- package: github.com/cloudfoundry-community/go-cfclient
